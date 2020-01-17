@@ -7,15 +7,16 @@ public class Controls : MonoBehaviour
 {
 
     //Allow control tweaking while testing
-    [SerializeField] float mouseSensitivity = 1f;
+    [SerializeField] float mouseSensitivity = 2f;
+    [SerializeField] float keySensitivity = 10f;
 
     private Vector2 mouseMovementSum;
-    private Transform body;
+    private Vector3 WASDMovementSum;
 
     // Start is called before the first frame update
     void Start()
     {
-        body = this.transform.parent.transform;
+
     }
 
     // Update is called once per frame
@@ -32,19 +33,29 @@ public class Controls : MonoBehaviour
             (Input.GetAxisRaw("Mouse X"),
                 Input.GetAxisRaw("Mouse Y"));
 
-        //add new mouse movement to the variable holding camera movement
+        //add new mouse movement to the variable holding camera movement (with mouse sensitivity multiplier)
         mouseMovementSum += mouseXY * mouseSensitivity;
+        //restrict up-down movement to 90 degrees
+        mouseMovementSum.y = Mathf.Clamp(mouseMovementSum.y, -90f, 90f);
 
-        //up-down camera movement
-        this.transform.localRotation = Quaternion.AngleAxis(-mouseMovementSum.y, Vector3.right);
-
-        //rotate parent body object left-right, along with camera
-        body.localRotation = Quaternion.AngleAxis(mouseMovementSum.x, Vector3.up);
+        //move camera with mouse
+        this.transform.localRotation = Quaternion.Euler(-mouseMovementSum.y, mouseMovementSum.x, 0f);
+        //todo figure out euler vs angleaxis and which one I should be using
     }
 
     void WASDMovement()
     {
-        //todo wasd movement of body
+        //Apply vector to WASD keys
+        Vector3 WASD = new Vector3
+            (Input.GetAxisRaw("Horizontal"),
+                Input.GetAxisRaw("Vertical"),
+                    0f);
+
+        //WASD creates too much movement, lower speed
+        WASD = WASD / keySensitivity;
+        
+        //Apply WASD input to player location
+        this.transform.Translate(WASD.x, 0f, WASD.y);
     }
 
 }
