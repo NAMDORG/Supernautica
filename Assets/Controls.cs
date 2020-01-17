@@ -11,7 +11,7 @@ public class Controls : MonoBehaviour
     [SerializeField] float keySensitivity = 10f;
 
     private Vector2 mouseMovementSum;
-    private Vector3 WASDMovementSum;
+    private Vector3 WASD;
 
     // Start is called before the first frame update
     void Start()
@@ -46,16 +46,28 @@ public class Controls : MonoBehaviour
     void WASDMovement()
     {
         //Apply vector to WASD keys
-        Vector3 WASD = new Vector3
+        WASD = new Vector3
             (Input.GetAxisRaw("Horizontal"),
                 Input.GetAxisRaw("Vertical"),
                     0f);
 
-        //WASD creates too much movement, lower speed
-        WASD = WASD / keySensitivity;
-        
+        MovementSpeed();
+
         //Apply WASD input to player location
         this.transform.Translate(WASD.x, 0f, WASD.y);
+    }
+
+    void MovementSpeed()
+    {
+        //speed up movement by holding left shift
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            WASD = WASD / keySensitivity * 2f;
+        }
+        else
+        {
+            WASD /= keySensitivity;
+        }
     }
 
 }
