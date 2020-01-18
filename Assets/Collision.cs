@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Collison : MonoBehaviour
+public class Collision : MonoBehaviour
 {
     // Start is called before the first frame update
     void Start()
@@ -12,11 +12,6 @@ public class Collison : MonoBehaviour
 
     // Update is called once per frame
     void Update()
-    {
-        
-    }
-
-    void OnCollisionEnter(Collision collision)
     {
         
     }

@@ -9,21 +9,25 @@ public class Controls : MonoBehaviour
     //Allow control tweaking while testing
     [SerializeField] float mouseSensitivity = 2f;
     [SerializeField] float keySensitivity = 10f;
+    [SerializeField] Vector3 bodyVelocity;
 
     private Vector2 mouseMovementSum;
     private Vector3 WASD;
+    private Rigidbody player;
 
     // Start is called before the first frame update
     void Start()
     {
-
+        player = GetComponent<Rigidbody>();
     }
+
 
     // Update is called once per frame
     void Update()
     {
         MouseMovement();
-        WASDMovement();
+        //WASDPosition();
+        WASDVelocity();
     }
 
     void MouseMovement()
@@ -43,7 +47,34 @@ public class Controls : MonoBehaviour
         //todo figure out euler vs angleaxis and which one I should be using
     }
 
-    void WASDMovement()
+//    void WASDPosition()
+//    {
+//        //Apply vector to WASD keys
+//        WASD = new Vector3
+//            (Input.GetAxisRaw("Horizontal"),
+//                Input.GetAxisRaw("Vertical"),
+//                    0f);
+//
+//        WASDMovementSpeed();
+//
+//        //Apply WASD input to player location
+//        this.transform.Translate(WASD.x, 0f, WASD.y);
+//    }
+//
+//    void WASDMovementSpeed()
+//    {
+//        //speed up movement by holding left shift
+//        if (Input.GetKey(KeyCode.LeftShift))
+//        {
+//            WASD = WASD / keySensitivity * 2f;
+//        }
+//        else
+//        {
+//            WASD /= keySensitivity;
+//        }
+//    }
+
+    private void WASDVelocity()
     {
         //Apply vector to WASD keys
         WASD = new Vector3
@@ -51,23 +82,11 @@ public class Controls : MonoBehaviour
                 Input.GetAxisRaw("Vertical"),
                     0f);
 
-        MovementSpeed();
+        WASD *= keySensitivity;
 
-        //Apply WASD input to player location
-        this.transform.Translate(WASD.x, 0f, WASD.y);
+        //WASD creates a force that adds velocity to the player
+        player.AddForce(WASD.x, 0f, WASD.y);
+        bodyVelocity = player.velocity;
+
     }
-
-    void MovementSpeed()
-    {
-        //speed up movement by holding left shift
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            WASD = WASD / keySensitivity * 2f;
-        }
-        else
-        {
-            WASD /= keySensitivity;
-        }
-    }
-
 }
