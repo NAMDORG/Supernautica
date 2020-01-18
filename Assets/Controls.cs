@@ -9,6 +9,7 @@ public class Controls : MonoBehaviour
     //Allow control tweaking while testing
     [SerializeField] float mouseSensitivity = 2f;
     [SerializeField] float keySensitivity = 10f;
+    //Show the body's velocity in the inspector for bug testing
     [SerializeField] Vector3 bodyVelocity;
 
     private Vector2 mouseMovementSum;
