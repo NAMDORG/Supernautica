@@ -19,7 +19,12 @@ public class Controls : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //declare the player mesh rigidbody
         player = GetComponent<Rigidbody>();
+
+        //make cursor invisible when starting the game
+        Cursor.visible = false;
+
     }
 
 
@@ -27,9 +32,12 @@ public class Controls : MonoBehaviour
     void Update()
     {
         MouseMovement();
-        //WASDPosition();
-        WASDVelocity();
+        WASDOptions();
+
+        MouseClick();
     }
+
+
 
     void MouseMovement()
     {
@@ -48,36 +56,43 @@ public class Controls : MonoBehaviour
         //todo figure out euler vs angleaxis and which one I should be using
     }
 
-//    void WASDPosition()
-//    {
-//        //Apply vector to WASD keys
-//        WASD = new Vector3
-//            (Input.GetAxisRaw("Horizontal"),
-//                Input.GetAxisRaw("Vertical"),
-//                    0f);
-//
-//        WASDMovementSpeed();
-//
-//        //Apply WASD input to player location
-//        this.transform.Translate(WASD.x, 0f, WASD.y);
-//    }
-//
-//    void WASDMovementSpeed()
-//    {
-//        //speed up movement by holding left shift
-//        if (Input.GetKey(KeyCode.LeftShift))
-//        {
-//            WASD = WASD / keySensitivity * 2f;
-//        }
-//        else
-//        {
-//            WASD /= keySensitivity;
-//        }
-//    }
-
-    private void WASDVelocity()
+    private void WASDOptions()
     {
-        //Apply vector to WASD keys
+        //WASDPosition();
+        WASDVelocity();
+        WASDClinging();
+    }
+
+    //    void WASDPosition()
+    //    {
+    //        //Pressing a WASD key applies a vector in that direction on a 2d plane
+    //        WASD = new Vector3
+    //            (Input.GetAxisRaw("Horizontal"),
+    //                Input.GetAxisRaw("Vertical"),
+    //                    0f);
+    //
+    //        WASDMovementSpeed();
+    //
+    //        //Apply WASD input to player location
+    //        this.transform.Translate(WASD.x, 0f, WASD.y);
+    //    }
+    //
+    //    void WASDMovementSpeed()
+    //    {
+    //        //speed up movement by holding left shift
+    //        if (Input.GetKey(KeyCode.LeftShift))
+    //        {
+    //            WASD = WASD / keySensitivity * 2f;
+    //        }
+    //        else
+    //        {
+    //            WASD /= keySensitivity;
+    //        }
+    //    }
+
+    void WASDVelocity()
+    {
+        //Pressing a WASD key applies a vector in that direction on a 2d plane
         WASD = new Vector3
             (Input.GetAxisRaw("Horizontal"),
                 Input.GetAxisRaw("Vertical"),
@@ -86,17 +101,31 @@ public class Controls : MonoBehaviour
         WASD *= keySensitivity;
 
         //WASD creates a force that adds velocity to the player
-        player.AddForce(WASD.x, 0f, WASD.y);
+        player.AddRelativeForce(WASD.x, 0f, WASD.y);
         bodyVelocity = player.velocity;
 
-        StopVelocity();
-    }
-
-    private void StopVelocity()
-    {
         if (Input.GetKey(KeyCode.Space))
         {
-            player.velocity = Vector3.zero;
+            StopVelocity();
         }
     }
+
+    void WASDClinging()
+    {
+        
+    }
+
+    public void StopVelocity()
+    {
+        player.velocity = Vector3.zero;
+    }
+
+    void MouseClick()
+    {
+        if (Input.GetKey(KeyCode.Mouse1))
+        {
+            GetComponent<Cling>().ClingToObject();
+        }
+    }
+
 }
