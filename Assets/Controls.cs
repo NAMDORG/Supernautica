@@ -88,5 +88,14 @@ public class Controls : MonoBehaviour
         player.AddForce(WASD.x, 0f, WASD.y);
         bodyVelocity = player.velocity;
 
+        StopVelocity();
+    }
+
+    private void StopVelocity()
+    {
+        if (Input.GetKey(KeyCode.Space))
+        {
+            player.velocity = Vector3.zero;
+        }
     }
 }
