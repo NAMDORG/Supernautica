@@ -8,10 +8,13 @@ public class Cling2 : MonoBehaviour
 
     public bool objectIsClingable, movingToCling, playerIsClinging;
 
-    private Vector3 surfaceNormal, closestPoint;
+    private Vector3 surfaceNormal, closestPoint, movementDirection;
+    public static Vector3 newClosestPoint, newClosestPointOffset;
     public RaycastHit lookHit, bodyHit;
     private Vector3 velocity = Vector3.zero;
     private Transform capsule;
+
+    [SerializeField] float speed = 1f;
 
     public void Update()
     {
@@ -21,13 +24,16 @@ public class Cling2 : MonoBehaviour
             objectIsClingable = false;
             movingToCling = false;
             playerIsClinging = false;
-            //Controls.WASDType = MovementType.velocity;
+            Controls.WASDType = MovementType.velocity;
         }
     }
 
     public void ClingToObject()
     {
-        LookingAtCloseObject();
+        if (playerIsClinging == false)
+        {
+            LookingAtCloseObject();
+        }
 
         if (objectIsClingable == true && playerIsClinging == false)
         {
@@ -54,16 +60,11 @@ public class Cling2 : MonoBehaviour
             //if an object is close enough and eligible to cling, change variable to true
             objectIsClingable = true;
         }
-        
-        if (lookHit.collider)
-        {
-            closestPoint = lookHit.collider.ClosestPoint(transform.position);
-        }
     }
 
     private void PullToObject()
     {
-        transform.position = Vector3.SmoothDamp(transform.position, closestPoint, ref velocity, 0.3f);
+        transform.position = Vector3.SmoothDamp(transform.position, lookHit.point, ref velocity, 0.3f); ;
         movingToCling = true;
     }
 
@@ -75,6 +76,7 @@ public class Cling2 : MonoBehaviour
             //cling to that object
             playerIsClinging = true;
             movingToCling = false;
+            Controls.WASDType = MovementType.clinging;
 
             //zero velocity
             GetComponent<Controls>().StopVelocity();
@@ -84,14 +86,11 @@ public class Cling2 : MonoBehaviour
     private void RaycastAtNewPosition()
     {
         MovementDirection();
-
-
-
     }
 
     private void MovementDirection()
     {
-        Vector3 movementDirection = Vector3.zero;
+        movementDirection = transform.position;
 
         if (Input.GetAxisRaw("Horizontal") > 0)
         {
@@ -111,7 +110,19 @@ public class Cling2 : MonoBehaviour
             movementDirection += -transform.up;
         }
 
-        movementDirection.Normalize();
-        print(movementDirection);
+        newClosestPoint = lookHit.collider.ClosestPoint(movementDirection);
+        newClosestPoint += lookHit.normal * .5f;
+    }
+
+    public void RaycastTest()
+    {
+        Vector3 rayDir = newClosestPoint - movementDirection;
+
+        if (Physics.Raycast(movementDirection, rayDir, out bodyHit, 1f))
+        {
+            //make the raycast visible on the screen
+            Debug.DrawRay(newClosestPoint,bodyHit.normal,Color.red);
+            newClosestPoint +=  bodyHit.normal;
+        }
     }
 }

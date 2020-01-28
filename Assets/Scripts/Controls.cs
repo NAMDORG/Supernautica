@@ -9,13 +9,14 @@ public class Controls : MonoBehaviour
 {
     //Game state
     public static MovementType WASDType;
+    public string movementType;
 
     //Allow control tweaking while testing
     [SerializeField] float mouseSensitivity = 2f;
     [SerializeField] float keySensitivity = 10f;
 
     //Show the body's velocity in the inspector for bug testing
-    [SerializeField] Vector3 bodyVelocity;
+    [SerializeField] Vector3 bodyVelocity = Vector3.zero;
 
     private Vector2 mouseMovementSum;
     public static Vector3 WASD;
@@ -28,12 +29,13 @@ public class Controls : MonoBehaviour
     {
         //declare the player meshrigidbody
         player = GetComponent<Rigidbody>();
+        player.interpolation = RigidbodyInterpolation.Interpolate;
 
         //make cursor invisible when starting the game
         Cursor.visible = false;
 
         //there are 3 ways WASD keys can be processed. I want the 'velocity' type.
-        WASDType = MovementType.clinging;
+        WASDType = MovementType.velocity;
 
     }
 
@@ -47,6 +49,10 @@ public class Controls : MonoBehaviour
         MouseClick();
         //process WASD controls - decide which WASD option should be used
         WASDOptions();
+
+        movementType = WASDType.ToString();
+
+        //GetComponent<Cling2>().RaycastTest();
     }
 
     //****************************
@@ -63,7 +69,7 @@ public class Controls : MonoBehaviour
         //add new mouse movement to the variable holding camera movement (with mouse sensitivity multiplier)
         mouseMovementSum += mouseXY * mouseSensitivity;
         //restrict up-down mouse movement to 90 degrees
-        mouseMovementSum.y = Mathf.Clamp(mouseMovementSum.y, -90f, 90f);
+        //mouseMovementSum.y = Mathf.Clamp(mouseMovementSum.y, -90f, 90f);
 
         //move camera with mouse
         this.transform.localRotation = Quaternion.Euler(-mouseMovementSum.y, mouseMovementSum.x, 0f);
@@ -108,7 +114,7 @@ public class Controls : MonoBehaviour
     {
         WASDMovementSpeed();
 
-        //Apply WASD input to player position
+        //Forward backward left right position for moving under gravity
         this.transform.Translate(WASD.x, 0f, WASD.y);
     }
 
@@ -141,9 +147,11 @@ public class Controls : MonoBehaviour
 
     void WASDClinging()
     {
-        //Apply WASD input to player location
-        this.transform.Translate(WASD.x, WASD.y, 0f);
-        print(WASD);
+        //Up down left right movement for traversing surfaces
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D))
+        {
+            transform.position = Vector3.SmoothDamp(transform.position, Cling2.newClosestPoint, ref bodyVelocity, 0.5f);
+        }
     }
 
     //*****************************
