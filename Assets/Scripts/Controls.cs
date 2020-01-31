@@ -7,90 +7,89 @@ public enum MovementType { position, velocity, clinging };
 
 public class Controls : MonoBehaviour
 {
-    //Game state
-    public static MovementType WASDType;
-    public string movementType;
-
-    //Allow control tweaking while testing
     [SerializeField] float mouseSensitivity = 2f;
-    [SerializeField] float keySensitivity = 10f;
-
-    //Show the body's velocity in the inspector for bug testing
+    [SerializeField] float movementSpeed = 1f;
     [SerializeField] Vector3 bodyVelocity = Vector3.zero;
 
+    public MovementType WASDType;
+
     private Vector2 mouseMovementSum;
-    public static Vector3 WASD;
+    private Vector3 WASD;
+    private Vector3 pullVelocity = Vector3.zero;
     private Rigidbody player;
+    private RaycastHit lookHit;
+    public bool objectIsClingable, movingToCling, playerIsClinging;
 
-
-
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        //declare the player meshrigidbody
-        player = GetComponent<Rigidbody>();
-        player.interpolation = RigidbodyInterpolation.Interpolate;
-
-        //make cursor invisible when starting the game
+        // Make cursor invisible on game start
         Cursor.visible = false;
 
-        //there are 3 ways WASD keys can be processed. I want the 'velocity' type.
+        // Declare the player meshrigidbody
+        player = GetComponent<Rigidbody>();
+
         WASDType = MovementType.velocity;
+    }
+
+    private void Update()
+    {
+        // Process mouse controls
+        MouseControls();
+
+        // Process WASD Controls
+        WASDControls();
+
+        // Process other key commands
 
     }
 
-
-    // Update is called once per frame
-    void Update()
+    // Process all the functions controlled by mouse buttons and movement
+    private void MouseControls()
     {
-        //process mouselook
-        MouseMovement();
-        //process what left and right mouseclicks do
-        MouseClick();
-        //process WASD controls - decide which WASD option should be used
-        WASDOptions();
+        // Convert mouse movement into mouselook
+        Mouselook();
 
-        movementType = WASDType.ToString();
-
-        //GetComponent<Cling2>().RaycastTest();
+        // What happens when the right mouse button is clicked
+        MouseOne();
     }
 
-    //****************************
-    //Mouse Controls
-    //****************************
-
-    void MouseMovement()
+    // Convert mouse movement in two dimensions into mouselook
+    private void Mouselook()
     {
-        //How much as the mouse moved in X and Y
+        // How much as the mouse moved in X and Y
         Vector2 mouseXY = new Vector2
             (Input.GetAxisRaw("Mouse X"),
                 Input.GetAxisRaw("Mouse Y"));
 
-        //add new mouse movement to the variable holding camera movement (with mouse sensitivity multiplier)
+        // Add new mouse movement to the variable holding camera movement (with mouse sensitivity multiplier)
         mouseMovementSum += mouseXY * mouseSensitivity;
-        //restrict up-down mouse movement to 90 degrees
+
+        // Restrict up-down mouse movement to 90 degrees
         //mouseMovementSum.y = Mathf.Clamp(mouseMovementSum.y, -90f, 90f);
 
-        //move camera with mouse
+        // Move object with the mouse - camera is a child of this object so it moves as well
         this.transform.localRotation = Quaternion.Euler(-mouseMovementSum.y, mouseMovementSum.x, 0f);
-        //todo figure out euler vs angleaxis and which one I should be using
     }
 
-    void MouseClick()
+    // Process clicking the right mouse button (Cling)
+    private void MouseOne()
     {
         if (Input.GetKey(KeyCode.Mouse1))
         {
-            GetComponent<Cling2>().ClingToObject();
+            Cling();
+        }
+        else
+        {
+            objectIsClingable = false;
+            movingToCling = false;
+            playerIsClinging = false;
         }
     }
 
-    //*************************
-    //WASD Controls
-    //*************************
-
-    private void WASDOptions()
+    // Turn mouse movement into a Vector2, then decide which Movement Type to process
+    private void WASDControls()
     {
-        //Pressing a WASD key applies a vector in that direction on a 2d plane
+        // Pressing a WASD key applies a vector in that direction on a 2d plane
         WASD = new Vector3
             (Input.GetAxisRaw("Horizontal"),
                 Input.GetAxisRaw("Vertical"),
@@ -110,30 +109,19 @@ public class Controls : MonoBehaviour
         }
     }
 
-    void WASDPosition()
+    // Movement Type
+    // WASD moves player position forward, backward, left, right
+    private void WASDPosition()
     {
-        WASDMovementSpeed();
-
-        //Forward backward left right position for moving under gravity
+        // Forward backward left right position for moving under gravity
         this.transform.Translate(WASD.x, 0f, WASD.y);
     }
 
-    void WASDMovementSpeed()
+    // Movement Type
+    // WASD applies a force that creates a velocity forward, backward, left, right
+    private void WASDVelocity()
     {
-        //speed up movement by holding left shift
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            WASD = WASD / keySensitivity * 2f;
-        }
-        else
-        {
-            WASD /= keySensitivity;
-        }
-    }
-
-    void WASDVelocity()
-    {
-        WASD *= keySensitivity;
+        WASD *= movementSpeed;
 
         //WASD creates a force that adds velocity to the player
         player.AddRelativeForce(WASD.x, 0f, WASD.y);
@@ -145,28 +133,64 @@ public class Controls : MonoBehaviour
         }
     }
 
-    void WASDClinging()
-    {
-        //Up down left right movement for traversing surfaces
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D))
-        {
-            transform.position = Vector3.SmoothDamp(transform.position, Cling2.newClosestPoint, ref bodyVelocity, 0.5f);
-        }
-    }
-
-    //*****************************
-    //Other Controls
-    //*****************************
-
-    //Space zeroes velocity, nested in WASDVelocity function
-
-    //*****************************
-    //Non-key Functions
-    //*****************************
-
-    public void StopVelocity()
+    private void StopVelocity()
     {
         player.velocity = Vector3.zero;
     }
 
+    private void Cling()
+    {
+        if (playerIsClinging == false)
+        {
+            // Run function to see if object looked at is close enough and capable of being clinged to
+            LookingAtClingable();
+        }
+
+        if (objectIsClingable == true && playerIsClinging == false)
+        {
+            PullToObject();
+        }
+    }
+
+    private void LookingAtClingable()
+    {
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out lookHit, 20f))
+        {
+            // Make the raycast visible on the screen
+            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * lookHit.distance, Color.yellow);
+
+            // If an object is close enough and eligible to cling, change variable to true
+            objectIsClingable = true;
+
+            PullToObject();
+        }
+    }
+
+    private void PullToObject()
+    {
+        transform.position = Vector3.SmoothDamp(transform.position, lookHit.point, ref pullVelocity, 0.3f); ;
+        movingToCling = true;
+    }
+
+    private void OnCollisionEnter(UnityEngine.Collision collision)
+    {
+        // If the player collides with an object with the right kind of collider while they're 'moving to cling'
+        if (collision.gameObject.tag == "Clingable" && movingToCling)
+        {
+            // Cling to that object
+            playerIsClinging = true;
+            movingToCling = false;
+            WASDType = MovementType.clinging;
+
+            // Zero velocity
+            StopVelocity();
+        }
+    }
+
+    // Movement Type
+    // WASD moves player up, down, left, and right relative to an object's surface
+    private void WASDClinging()
+    {
+        // TODO: Cling controls
+    }
 }
