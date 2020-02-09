@@ -16,7 +16,7 @@ public class Controls : MonoBehaviour
     private Vector2 mouseMovementSum;
     private float mouseRotationClamp, QEPress;
     private Vector3 WASD;
-    public static Vector3 nextPoint, movementDirection, closestNormal;
+    public static Vector3 firstPoint, nextPoint, movementDirection, closestNormal;
     private Vector3 pullVelocity = Vector3.zero;
     private Rigidbody player;
     private GameObject nearestClingable;
@@ -65,7 +65,7 @@ public class Controls : MonoBehaviour
         // Player rotation
         //print(transform.rotation);
 
-        print(nearestClingable.name);
+        //print(nearestClingable.name);
     }
 
     // Process all the functions controlled by mouse buttons and movement
@@ -188,11 +188,9 @@ public class Controls : MonoBehaviour
 
     private void Cling()
     {
-        if (playerIsClinging == false)
-        {
-            // Run function to see if object looked at is close enough and capable of being clinged to
-            FindClingable();
-        }
+        // Run function to see if object is close enough and capable of being clinged to
+        movementDirection = transform.position;
+        FindClingable();
 
         if (objectIsClingable == true && playerIsClinging == false)
         {
@@ -202,47 +200,33 @@ public class Controls : MonoBehaviour
 
     private void FindClingable()
     {
-        //// Start a variable at the player's position. This location will change when clinging.
-        //movementDirection = transform.position;
-        //
-        ////Cast a sphere out from 'movementDirection' that finds 'Clingable' objects
-        //Collider[] clingables = Physics.OverlapSphere(movementDirection, 2.0f, 1<<8);
-        //
-        //// If there is at least one clingable in range, store the closest one as 'nearestClingable' variable
-        //float nearestDistance = float.MaxValue;
-        //float distance;
-        //
-        //if (clingables.Length > 0)
-        //{
-        //    foreach (Collider surface in clingables)
-        //    {
-        //        distance = Vector3.Distance(transform.position, surface.ClosestPoint(transform.position));
-        //        if (distance < nearestDistance)
-        //        {
-        //            nearestDistance = distance;
-        //            nearestClingable = surface.gameObject;
-        //        }
-        //    }
-        //
-        //    objectIsClingable = true;
-        //}
-
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out lookHit, 30f))
-        {
-            // If an object is close enough and eligible to cling, change variable to true
-            objectIsClingable = true;
-            closestNormal = lookHit.normal;
+        //Cast a sphere out from 'movementDirection' that finds 'Clingable' objects
+        Collider[] clingables = Physics.OverlapSphere(movementDirection, 2.0f, 1<<8);
         
-            PullToObject();
+        // If there is at least one clingable in range, store the closest one as 'nearestClingable' variable
+        float nearestDistance = float.MaxValue;
+        float distance;
+        
+        if (clingables.Length > 0)
+        {
+            foreach (Collider surface in clingables)
+            {
+                distance = Vector3.Distance(transform.position, surface.ClosestPoint(transform.position));
+                if (distance < nearestDistance)
+                {
+                    nearestDistance = distance;
+                    firstPoint = surface.ClosestPoint(transform.position);
+                    nearestClingable = surface.gameObject;
+                }
+            }
+        
+            objectIsClingable = true;
         }
     }
 
     private void PullToObject()
     {
-        //transform.position = Vector3.MoveTowards(transform.position, , 5.0f * Time.deltaTime);
-        //movingToCling = true;
-
-        transform.position = Vector3.MoveTowards(transform.position, lookHit.point + (lookHit.normal * .5f), 5.0f * Time.deltaTime);
+        transform.position = Vector3.MoveTowards(transform.position, firstPoint, 5.0f * Time.deltaTime);
         movingToCling = true;
     }
 
@@ -275,7 +259,7 @@ public class Controls : MonoBehaviour
 
     private void MovementDirection()
     {
-        movementDirection = transform.position;
+        FindClosestNormal();
 
         if (Input.GetAxisRaw("Horizontal") > 0)
         {
@@ -287,7 +271,7 @@ public class Controls : MonoBehaviour
             Vector3 leftProjection = Vector3.ProjectOnPlane(-transform.right, bodyHit.normal).normalized;
             movementDirection += leftProjection;
         }
-
+        
         if (Input.GetAxisRaw("Vertical") > 0)
         {
             Vector3 upProjection = Vector3.ProjectOnPlane(transform.up, bodyHit.normal).normalized;
@@ -299,20 +283,27 @@ public class Controls : MonoBehaviour
             movementDirection += downProjection;
         }
 
-        nextPoint = lookHit.collider.ClosestPoint(movementDirection);
-
-        FindClosestNormal();
+        nextPoint = bodyHit.collider.ClosestPoint(movementDirection) + closestNormal;
+        print(nextPoint);
     }
 
     private void FindClosestNormal()
     {
+        nextPoint = firstPoint;
         Vector3 rayDir = nextPoint - movementDirection;
 
         if (Physics.Raycast(movementDirection, rayDir, out bodyHit, 1f))
         {
-            //make the raycast visible on the screen
             closestNormal = bodyHit.normal * 0.5f;
             nextPoint += closestNormal;
         }
+
+        //Vector3 rayDir = nextPoint - movementDirection;
+        //
+        //if (Physics.Raycast(movementDirection, rayDir, out bodyHit, 1f))
+        //{
+        //    closestNormal = bodyHit.normal * 0.5f;
+        //    nextPoint += closestNormal;
+        //}
     }
 }

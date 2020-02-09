@@ -7,6 +7,6 @@ public class Gizmo : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        //Gizmos.DrawSphere(Controls.nextPoint, 1f);
+        //Gizmos.DrawSphere(Controls.nextPoint, .5f);
     }
 }
