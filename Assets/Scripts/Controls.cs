@@ -14,10 +14,13 @@ public class Controls : MonoBehaviour
     public MovementType WASDType;
 
     private Vector2 mouseMovementSum;
+    private float mouseRotationClamp, QEPress;
     private Vector3 WASD;
+    public static Vector3 nextPoint, movementDirection, closestNormal;
     private Vector3 pullVelocity = Vector3.zero;
     private Rigidbody player;
-    private RaycastHit lookHit;
+    private GameObject nearestClingable;
+    public static RaycastHit lookHit, bodyHit;
     public bool objectIsClingable, movingToCling, playerIsClinging;
 
     private void Start()
@@ -29,6 +32,7 @@ public class Controls : MonoBehaviour
         player = GetComponent<Rigidbody>();
 
         WASDType = MovementType.velocity;
+
     }
 
     private void Update()
@@ -40,7 +44,28 @@ public class Controls : MonoBehaviour
         WASDControls();
 
         // Process other key commands
+        QERoll();
 
+        // Functions for testing
+        PrintToConsole();   
+    }
+
+    private void PrintToConsole()
+    {
+        // Lines to print some stuff to console for testing
+        // Delete this when this script is done
+
+        // Direction player is looking in degrees
+        //print(transform.eulerAngles + " forward");
+
+        // Direction of the surface normal in degrees
+        //print(Quaternion.LookRotation(-lookHit.normal).eulerAngles + " normal");
+
+        // Print quaternions to console
+        // Player rotation
+        //print(transform.rotation);
+
+        print(nearestClingable.name);
     }
 
     // Process all the functions controlled by mouse buttons and movement
@@ -48,6 +73,8 @@ public class Controls : MonoBehaviour
     {
         // Convert mouse movement into mouselook
         Mouselook();
+        // Raycast to see if the player is looking at something
+        RaycastFromMouselook();
 
         // What happens when the right mouse button is clicked
         MouseOne();
@@ -62,13 +89,32 @@ public class Controls : MonoBehaviour
                 Input.GetAxisRaw("Mouse Y"));
 
         // Add new mouse movement to the variable holding camera movement (with mouse sensitivity multiplier)
-        mouseMovementSum += mouseXY * mouseSensitivity;
-
-        // Restrict up-down mouse movement to 90 degrees
-        //mouseMovementSum.y = Mathf.Clamp(mouseMovementSum.y, -90f, 90f);
+        mouseMovementSum = mouseXY * mouseSensitivity;
 
         // Move object with the mouse - camera is a child of this object so it moves as well
-        this.transform.localRotation = Quaternion.Euler(-mouseMovementSum.y, mouseMovementSum.x, 0f);
+        transform.Rotate(-mouseMovementSum.y, mouseMovementSum.x, 0f, Space.Self);
+    }
+
+    private void RaycastFromMouselook()
+    {
+        //// TODO: This should maybe be attached to the camera, not the player sphere?
+        //if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out lookHit, Mathf.Infinity))
+        //{
+        //    // Make raycast visible on screen
+        //    Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * lookHit.distance, Color.yellow);
+        //}
+    }
+
+    private void QERoll()
+    {
+        if (Input.GetKey(KeyCode.Q))
+        {
+            transform.Rotate(0f, 0f, 1.0f);
+        }
+        else if (Input.GetKey(KeyCode.E))
+        {
+            transform.Rotate(0f, 0f, -1.0f);
+        }
     }
 
     // Process clicking the right mouse button (Cling)
@@ -83,6 +129,7 @@ public class Controls : MonoBehaviour
             objectIsClingable = false;
             movingToCling = false;
             playerIsClinging = false;
+            WASDType = MovementType.velocity;
         }
     }
 
@@ -113,7 +160,8 @@ public class Controls : MonoBehaviour
     // WASD moves player position forward, backward, left, right
     private void WASDPosition()
     {
-        // Forward backward left right position for moving under gravity
+        // TODO: Gravity movement
+        // This is the starting point for an eventual feature of artificial gravity. Will need adjusted mouselook too.
         this.transform.Translate(WASD.x, 0f, WASD.y);
     }
 
@@ -127,7 +175,7 @@ public class Controls : MonoBehaviour
         player.AddRelativeForce(WASD.x, 0f, WASD.y);
         bodyVelocity = player.velocity;
 
-        if (Input.GetKey(KeyCode.Space))
+        if (Input.GetKey(KeyCode.LeftShift))
         {
             StopVelocity();
         }
@@ -143,7 +191,7 @@ public class Controls : MonoBehaviour
         if (playerIsClinging == false)
         {
             // Run function to see if object looked at is close enough and capable of being clinged to
-            LookingAtClingable();
+            FindClingable();
         }
 
         if (objectIsClingable == true && playerIsClinging == false)
@@ -152,27 +200,53 @@ public class Controls : MonoBehaviour
         }
     }
 
-    private void LookingAtClingable()
+    private void FindClingable()
     {
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out lookHit, 20f))
-        {
-            // Make the raycast visible on the screen
-            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * lookHit.distance, Color.yellow);
+        //// Start a variable at the player's position. This location will change when clinging.
+        //movementDirection = transform.position;
+        //
+        ////Cast a sphere out from 'movementDirection' that finds 'Clingable' objects
+        //Collider[] clingables = Physics.OverlapSphere(movementDirection, 2.0f, 1<<8);
+        //
+        //// If there is at least one clingable in range, store the closest one as 'nearestClingable' variable
+        //float nearestDistance = float.MaxValue;
+        //float distance;
+        //
+        //if (clingables.Length > 0)
+        //{
+        //    foreach (Collider surface in clingables)
+        //    {
+        //        distance = Vector3.Distance(transform.position, surface.ClosestPoint(transform.position));
+        //        if (distance < nearestDistance)
+        //        {
+        //            nearestDistance = distance;
+        //            nearestClingable = surface.gameObject;
+        //        }
+        //    }
+        //
+        //    objectIsClingable = true;
+        //}
 
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out lookHit, 30f))
+        {
             // If an object is close enough and eligible to cling, change variable to true
             objectIsClingable = true;
-
+            closestNormal = lookHit.normal;
+        
             PullToObject();
         }
     }
 
     private void PullToObject()
     {
-        transform.position = Vector3.SmoothDamp(transform.position, lookHit.point, ref pullVelocity, 0.3f); ;
+        //transform.position = Vector3.MoveTowards(transform.position, , 5.0f * Time.deltaTime);
+        //movingToCling = true;
+
+        transform.position = Vector3.MoveTowards(transform.position, lookHit.point + (lookHit.normal * .5f), 5.0f * Time.deltaTime);
         movingToCling = true;
     }
 
-    private void OnCollisionEnter(UnityEngine.Collision collision)
+    private void OnCollisionStay(UnityEngine.Collision collision)
     {
         // If the player collides with an object with the right kind of collider while they're 'moving to cling'
         if (collision.gameObject.tag == "Clingable" && movingToCling)
@@ -191,6 +265,54 @@ public class Controls : MonoBehaviour
     // WASD moves player up, down, left, and right relative to an object's surface
     private void WASDClinging()
     {
-        // TODO: Cling controls
+        MovementDirection();
+
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D))
+        {
+            transform.position = Vector3.MoveTowards(transform.position, nextPoint, 3.0f * Time.deltaTime);
+        }
+    }
+
+    private void MovementDirection()
+    {
+        movementDirection = transform.position;
+
+        if (Input.GetAxisRaw("Horizontal") > 0)
+        {
+            Vector3 rightProjection = Vector3.ProjectOnPlane(transform.right, bodyHit.normal).normalized;
+            movementDirection += rightProjection;
+        }
+        else if (Input.GetAxisRaw("Horizontal") < 0)
+        {
+            Vector3 leftProjection = Vector3.ProjectOnPlane(-transform.right, bodyHit.normal).normalized;
+            movementDirection += leftProjection;
+        }
+
+        if (Input.GetAxisRaw("Vertical") > 0)
+        {
+            Vector3 upProjection = Vector3.ProjectOnPlane(transform.up, bodyHit.normal).normalized;
+            movementDirection += upProjection;
+        }
+        else if (Input.GetAxisRaw("Vertical") < 0)
+        {
+            Vector3 downProjection = Vector3.ProjectOnPlane(-transform.up, bodyHit.normal).normalized;
+            movementDirection += downProjection;
+        }
+
+        nextPoint = lookHit.collider.ClosestPoint(movementDirection);
+
+        FindClosestNormal();
+    }
+
+    private void FindClosestNormal()
+    {
+        Vector3 rayDir = nextPoint - movementDirection;
+
+        if (Physics.Raycast(movementDirection, rayDir, out bodyHit, 1f))
+        {
+            //make the raycast visible on the screen
+            closestNormal = bodyHit.normal * 0.5f;
+            nextPoint += closestNormal;
+        }
     }
 }
