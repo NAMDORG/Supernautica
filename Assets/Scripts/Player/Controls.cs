@@ -14,13 +14,12 @@ public class Controls : MonoBehaviour
     public MovementType WASDType;
 
     private Vector2 mouseMovementSum;
-    private float mouseRotationClamp, QEPress;
+    private float QEPress;
     private Vector3 WASD;
     public static Vector3 firstPoint, nextPoint, movementDirection, closestNormal;
-    private Vector3 pullVelocity = Vector3.zero;
     private Rigidbody player;
     private GameObject nearestClingable;
-    public static RaycastHit lookHit, bodyHit;
+    public static RaycastHit bodyHit;
     public bool objectIsClingable, movingToCling, playerIsClinging;
 
     private void Start()
@@ -175,10 +174,27 @@ public class Controls : MonoBehaviour
         player.AddRelativeForce(WASD.x, 0f, WASD.y);
         bodyVelocity = player.velocity;
 
+        //AdjustCameraFOV();
+
         if (Input.GetKey(KeyCode.LeftShift))
         {
             StopVelocity();
         }
+    }
+
+    // Adjust camera field of view to give a little tactile feel to acceleration
+    private void AdjustCameraFOV()
+    {
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S))
+        {
+            Camera.main.fieldOfView += WASD.y * 10.0f * Time.deltaTime;
+            Camera.main.fieldOfView = Mathf.Clamp(Camera.main.fieldOfView, 55.0f, 65.0f);
+        }
+        else
+        {
+            Camera.main.fieldOfView = Mathf.Lerp(Camera.main.fieldOfView, 60.0f, 10 * Time.deltaTime);
+        }
+        print(Camera.main.fieldOfView);
     }
 
     private void StopVelocity()
@@ -274,13 +290,13 @@ public class Controls : MonoBehaviour
         
         if (Input.GetAxisRaw("Vertical") > 0)
         {
-            Vector3 upProjection = Vector3.ProjectOnPlane(transform.up, bodyHit.normal).normalized;
-            movementDirection += upProjection;
+            Vector3 forwardProjection = Vector3.ProjectOnPlane(transform.forward, bodyHit.normal).normalized;
+            movementDirection += forwardProjection;
         }
         else if (Input.GetAxisRaw("Vertical") < 0)
         {
-            Vector3 downProjection = Vector3.ProjectOnPlane(-transform.up, bodyHit.normal).normalized;
-            movementDirection += downProjection;
+            Vector3 backwardProjection = Vector3.ProjectOnPlane(-transform.forward, bodyHit.normal).normalized;
+            movementDirection += backwardProjection;
         }
 
         nextPoint = bodyHit.collider.ClosestPoint(movementDirection) + closestNormal;
@@ -297,13 +313,5 @@ public class Controls : MonoBehaviour
             closestNormal = bodyHit.normal * 0.5f;
             nextPoint += closestNormal;
         }
-
-        //Vector3 rayDir = nextPoint - movementDirection;
-        //
-        //if (Physics.Raycast(movementDirection, rayDir, out bodyHit, 1f))
-        //{
-        //    closestNormal = bodyHit.normal * 0.5f;
-        //    nextPoint += closestNormal;
-        //}
     }
 }
