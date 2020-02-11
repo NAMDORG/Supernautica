@@ -8,11 +8,6 @@ public class Inventory : MonoBehaviour
     public static List<Consumable> characterConsumables = new List<Consumable>();
     public ConsumableDatabase consumableDatabase;
 
-    private void Update()
-    {
-
-    }
-
     public void GiveItem(int id)
     {
         Consumable consumableToAdd = consumableDatabase.GetConsumable(id);

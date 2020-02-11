@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ConsumableDatabase : MonoBehaviour
 {
-    public List<Consumable> consumables = new List<Consumable>();
+    public static List<Consumable> consumables = new List<Consumable>();
 
     private void Awake()
     {
@@ -24,6 +24,10 @@ public class ConsumableDatabase : MonoBehaviour
     void BuildDatabase()
     {
         // TODO: I need to figure out resources for this game.
-        consumables = new List<Consumable>() { (new Consumable(0, "Oxygen Tank", "A tank filled with breathable air.")) };
+        consumables = new List<Consumable>()
+        {
+            (new Consumable(0, "Oxygen Tank", "A tank filled with breathable air.")),
+            (new Consumable(1, "Health Pack", "A kit that assists with healing."))
+        };
     }
 }

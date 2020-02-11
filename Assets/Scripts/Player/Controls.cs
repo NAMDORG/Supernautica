@@ -44,6 +44,7 @@ public class Controls : MonoBehaviour
 
         // Process other key commands
         QERoll();
+        EscKey();
 
         // Functions for testing
         PrintToConsole();   
@@ -312,6 +313,14 @@ public class Controls : MonoBehaviour
         {
             closestNormal = bodyHit.normal * 0.5f;
             nextPoint += closestNormal;
+        }
+    }
+
+    private void EscKey()
+    {
+        if (Input.GetKey(KeyCode.Escape))
+        {
+            Application.Quit();
         }
     }
 }
