@@ -4,9 +4,13 @@ public class CameraLook : MonoBehaviour
 {
     private RaycastHit lookHit;
     public Texture2D crosshairImage;
-    private GameObject lookHitObject;
+    private GameObject lookHitObject, inventoryUI;
     private bool isResource;
 
+    private void Start()
+    {
+        inventoryUI = GameObject.Find("Inventory");
+    }
 
     // Update is called once per frame
     void Update()
@@ -43,23 +47,11 @@ public class CameraLook : MonoBehaviour
             if (isResource == true && lookHit.distance <= 2.0f)
             {
                 Destroy(lookHitObject);
-                GetComponent<Inventory>().GiveItem(lookHitObject.name);
-                ShowInventory();
+                inventoryUI.GetComponent<Inventory>().GiveItem(lookHitObject.name);
             }
         }
 
         // TODO: Pull object towards camera (maybe not necessary until I have models to work with)
-    }
-
-    private void ShowInventory()
-    {
-        string temp = "";
-        foreach(Consumable consumable in Inventory.characterConsumables)
-        {
-            temp += consumable.title + '\n';
-        }
-        
-        print(temp);
     }
 
     private void OnGUI()
