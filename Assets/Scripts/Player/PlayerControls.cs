@@ -13,11 +13,12 @@ public class PlayerControls : MonoBehaviour
     [SerializeField] Vector3 bodyVelocity = Vector3.zero;
 
     public MovementType WASDType;
-    public bool objectIsClingable, movingToCling, playerIsClinging;
+    public bool objectIsClingable, movingToCling, playerIsClinging, flashlightIsOn;
 
     //private Vector2 mouseMovementSum;
     private Vector3 WASD, firstPoint, nextPoint, movementDirection, closestNormal;
     private Rigidbody player;
+    private Light flashlight;
     private RaycastHit bodyHit;
 
     private void Start()
@@ -25,8 +26,9 @@ public class PlayerControls : MonoBehaviour
         // Make cursor invisible on game start
         Cursor.visible = false;
 
-        // Declare the player mesh rigidbody
+        // Declare game objects to be referenced below
         player = GetComponent<Rigidbody>();
+        flashlight = GetComponentInChildren<Light>();
 
         // Player starts with the velocity movement type
         WASDType = MovementType.velocity;
@@ -41,9 +43,12 @@ public class PlayerControls : MonoBehaviour
         WASDControls();
 
         // Process other key commands
-        QERoll();
-        EscKey();
+        OtherKeyControls();
     }
+
+    //==========================================/
+    // Inputs
+    //==========================================/
 
     // Process all the functions controlled by mouse buttons and movement
     private void MouseControls()
@@ -52,7 +57,7 @@ public class PlayerControls : MonoBehaviour
         Mouselook();
 
         // What happens when the right mouse button is clicked
-        MouseOne();
+        LeftShift();
     }
 
     // Convert mouse movement in two dimensions into mouselook
@@ -72,35 +77,12 @@ public class PlayerControls : MonoBehaviour
         transform.Rotate(-mouseMovementSum.y, mouseMovementSum.x, 0f, Space.Self);
     }
 
-    private void QERoll()
+    // Process clicking the left mouse button (Grab object)
+    private void MouseZero()
     {
-        // Press Q and E to roll left and right
-        if (Input.GetKey(KeyCode.Q))
+        if (Input.GetKeyDown(KeyCode.Mouse0))
         {
-            transform.Rotate(0f, 0f, 1.0f);
-        }
-        else if (Input.GetKey(KeyCode.E))
-        {
-            transform.Rotate(0f, 0f, -1.0f);
-        }
-    }
-
-    // Process clicking the right mouse button (Cling)
-    private void MouseOne()
-    {
-        // Press right mouse button to initialize cling functions
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            Cling();
-        }
-
-        // If right mouse is released, revert back to state before right mouse was clicked.
-        else
-        {
-            objectIsClingable = false;
-            movingToCling = false;
-            playerIsClinging = false;
-            WASDType = MovementType.velocity;
+            GetComponent<PlayerCamera>().GrabObject();
         }
     }
 
@@ -128,6 +110,19 @@ public class PlayerControls : MonoBehaviour
         }
     }
 
+    // Call other keypress functions
+    private void OtherKeyControls()
+    {
+        LeftShift();
+        QERoll();
+        Flashlight();
+        PauseGame();
+    }
+
+    //=========================================/
+    // Movement Functions
+    //=========================================/
+
     // Movement Type
     // WASD moves player position forward, backward, left, right
     private void WASDPosition()
@@ -146,16 +141,51 @@ public class PlayerControls : MonoBehaviour
         //WASD creates a force that adds velocity to the player
         player.AddRelativeForce(WASD.x, 0f, WASD.y);
         bodyVelocity = player.velocity;
-
-        //if (Input.GetKey(KeyCode.LeftShift))
-        //{
-        //    StopVelocity();
-        //}
     }
 
-    private void StopVelocity()
+    //Movement Type
+    // WASD moves player up, down, left, and right relative to an object's surface
+    private void WASDClinging()
     {
-        player.velocity = Vector3.zero;
+        MovementDirection();
+
+        transform.position = Vector3.MoveTowards(transform.position, nextPoint, 3.0f * Time.deltaTime);
+    }
+
+    // Press Q and E to roll left and right
+    private void QERoll()
+    {
+        if (Input.GetKey(KeyCode.Q))
+        {
+            transform.Rotate(0f, 0f, 1.0f);
+        }
+        else if (Input.GetKey(KeyCode.E))
+        {
+            transform.Rotate(0f, 0f, -1.0f);
+        }
+    }
+
+    //==========================================/
+    // Cling functions
+    //==========================================/
+
+    // Process pressing left shift (Cling)
+    private void LeftShift()
+    {
+        // Press right mouse button to initialize cling functions
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            Cling();
+        }
+
+        // If right mouse is released, revert back to state before right mouse was clicked.
+        else
+        {
+            objectIsClingable = false;
+            movingToCling = false;
+            playerIsClinging = false;
+            WASDType = MovementType.velocity;
+        }
     }
 
     // Parent function for a bunch of functions below that deal with clinging controls
@@ -226,18 +256,6 @@ public class PlayerControls : MonoBehaviour
         }
     }
 
-    // Movement Type
-    // WASD moves player up, down, left, and right relative to an object's surface
-    private void WASDClinging()
-    {
-        MovementDirection();
-
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D))
-        {
-            transform.position = Vector3.MoveTowards(transform.position, nextPoint, 3.0f * Time.deltaTime);
-        }
-    }
-
     private void MovementDirection()
     {
         FindClosestNormal();
@@ -285,8 +303,34 @@ public class PlayerControls : MonoBehaviour
         }
     }
 
-    private void EscKey()
+    //=========================================/
+    // Other key-press functions
+    //=========================================/
+
+    private void StopVelocity()
     {
+        player.velocity = Vector3.zero;
+    }
+
+    // Toggle flashlight with F key
+    private void Flashlight()
+    {
+        if (flashlightIsOn)
+        {
+            flashlight.enabled = true;
+            if (Input.GetKeyDown(KeyCode.F)) { flashlightIsOn = false; }
+        }
+        else if (!flashlightIsOn)
+        {
+            flashlight.enabled = false;
+            if (Input.GetKeyDown(KeyCode.F)) { flashlightIsOn = true; }
+        }
+    }
+
+    // Esc key immediately closes game
+    private void PauseGame()
+    {
+        // TODO: Pause menu
         if (Input.GetKey(KeyCode.Escape))
         {
             Application.Quit();

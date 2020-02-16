@@ -16,7 +16,6 @@ public class PlayerCamera : MonoBehaviour
     void Update()
     {
         LookForObject();
-        GrabObject();
     }
 
     private void LookForObject()
@@ -40,15 +39,12 @@ public class PlayerCamera : MonoBehaviour
         }
     }
 
-    private void GrabObject()
+    public void GrabObject()
     {
-        if (Input.GetKeyDown(KeyCode.Mouse0))
+        if (isResource == true && lookHit.distance <= 2.0f)
         {
-            if (isResource == true && lookHit.distance <= 2.0f)
-            {
-                Destroy(lookHitObject);
-                inventoryUI.GetComponent<PlayerInventory>().GiveItem(lookHitObject.name);
-            }
+            Destroy(lookHitObject);
+            inventoryUI.GetComponent<PlayerInventory>().GiveItem(lookHitObject.name);
         }
 
         // TODO: Pull object towards camera (maybe not necessary until I have models to work with)

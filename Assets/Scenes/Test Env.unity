@@ -151,7 +151,7 @@ Light:
   m_Shape: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 1
-  m_Range: 100
+  m_Range: 30
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
@@ -902,31 +902,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   consumableDatabase: {fileID: 1365655150}
---- !u!1 &927506787 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1397995312286765996, guid: a3dbe6dd54883b64eb549b5a767b2031,
-    type: 3}
-  m_PrefabInstance: {fileID: 2753140884976092777}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &927506790
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 927506787}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 561435bbd2031ef468e55e660dd53df0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mouseSensitivity: 2
-  movementSpeed: 1
-  bodyVelocity: {x: 0, y: 0, z: 0}
-  WASDType: 0
-  objectIsClingable: 0
-  movingToCling: 0
-  playerIsClinging: 0
 --- !u!1 &1188179041
 GameObject:
   m_ObjectHideFlags: 0
@@ -1575,25 +1550,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1843430468 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1397995311968285839, guid: a3dbe6dd54883b64eb549b5a767b2031,
-    type: 3}
-  m_PrefabInstance: {fileID: 2753140884976092777}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1843430471
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843430468}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5ec3164908e2f2445b34a9bb6ad3bf5f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  crosshairImage: {fileID: 2800000, guid: 1808ebfc843d44f408708d33c714b404, type: 3}
 --- !u!1001 &1882286314
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1670,10 +1626,25 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1397995311968285839, guid: a3dbe6dd54883b64eb549b5a767b2031,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
+    - target: {fileID: 1024067902, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
+      propertyPath: m_DrawHalo
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1024067902, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1024067902, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
+      propertyPath: m_SpotAngle
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 1024067902, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
+      propertyPath: m_InnerSpotAngle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1024067902, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
+      propertyPath: m_Intensity
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1397995312286765992, guid: a3dbe6dd54883b64eb549b5a767b2031,
         type: 3}
@@ -1735,7 +1706,5 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 1397995311968285836, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
-    - {fileID: 1397995312286765999, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
+    m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a3dbe6dd54883b64eb549b5a767b2031, type: 3}
