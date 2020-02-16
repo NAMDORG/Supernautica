@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class CameraLook : MonoBehaviour
+public class PlayerCamera : MonoBehaviour
 {
     private RaycastHit lookHit;
     public Texture2D crosshairImage;
@@ -47,7 +47,7 @@ public class CameraLook : MonoBehaviour
             if (isResource == true && lookHit.distance <= 2.0f)
             {
                 Destroy(lookHitObject);
-                inventoryUI.GetComponent<Inventory>().GiveItem(lookHitObject.name);
+                inventoryUI.GetComponent<PlayerInventory>().GiveItem(lookHitObject.name);
             }
         }
 

@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class Inventory : MonoBehaviour
+public class PlayerInventory : MonoBehaviour
 {
     public static List<Consumable> characterConsumables = new List<Consumable>();
     public ConsumableDatabase consumableDatabase;
