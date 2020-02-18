@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class PlayerCamera : MonoBehaviour
 {
@@ -6,6 +7,7 @@ public class PlayerCamera : MonoBehaviour
     public Texture2D crosshairImage;
     private GameObject lookHitObject, inventoryUI;
     private bool isResource;
+    public static bool lookingAtSame;
 
     private void Start()
     {
@@ -16,6 +18,19 @@ public class PlayerCamera : MonoBehaviour
     void Update()
     {
         LookForObject();
+        LookingAtClinged();
+    }
+
+    private void LookingAtClinged()
+    {
+        if (lookHitObject == PlayerControls.nearestClingable)
+        {
+            lookingAtSame = true;
+        }
+        else
+        {
+            lookingAtSame = false;
+        }
     }
 
     private void LookForObject()

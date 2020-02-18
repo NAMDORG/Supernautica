@@ -20,6 +20,7 @@ public class PlayerControls : MonoBehaviour
     private Rigidbody player;
     private Light flashlight;
     private RaycastHit bodyHit;
+    public static GameObject nearestClingable;
 
     private void Start()
     {
@@ -46,9 +47,8 @@ public class PlayerControls : MonoBehaviour
         // Process other key commands
         OtherKeyControls();
 
-        // TODO: Make conditional
+        // TODO: Make conditional?
         AdjustCamerFOV();
-
     }
 
     //==========================================/
@@ -206,6 +206,7 @@ public class PlayerControls : MonoBehaviour
                 {
                     nearestDistance = distance;
                     firstPoint = surface.ClosestPoint(transform.position);
+                    nearestClingable = surface.gameObject;
                 }
             }
 
@@ -321,13 +322,19 @@ public class PlayerControls : MonoBehaviour
         // Jump direction is where the player is looking, and speed is determined by JumpCharge function
         Vector3 jumpVector = transform.forward * jumpStrength;
 
-        // If space is released, jump with charged up force
-        if (Input.GetKeyUp(KeyCode.Space))
+        // If space is released while looking away from surface, jump with charged up force
+        if (Input.GetKeyUp(KeyCode.Space) && (!PlayerCamera.lookingAtSame))
         {
             ResetCling();
 
             player.AddForce(jumpVector, ForceMode.Impulse);
 
+            // Reset jumpStrength to zero after finished jumping
+            jumpStrength = 0.0f;
+        }
+        // If space is released while looking at surface, cancel jump and reset jumpStrength to 0;
+        else if (Input.GetKeyUp(KeyCode.Space) && (PlayerCamera.lookingAtSame))
+        {
             // Reset jumpStrength to zero after finished jumping
             jumpStrength = 0.0f;
         }
@@ -340,10 +347,10 @@ public class PlayerControls : MonoBehaviour
         float smoothVelocity = 0.0f;
 
         // Charge up jump by holding space
-        if (Input.GetKey(KeyCode.Space))
+        if (Input.GetKey(KeyCode.Space) && (playerIsClinging) && (!PlayerCamera.lookingAtSame))
         {
             jumpStrength += (6.0f * Time.deltaTime);
-            cameraFOV = Mathf.Lerp(80.0f, 88.0f, jumpStrength / 2.0f);
+            cameraFOV = Mathf.Lerp(80.0f, 86.0f, jumpStrength / 2.0f);
         }
         // If space is released, snap cameraFOV back to default
         else if (!Input.GetKey(KeyCode.Space) && (cameraFOV > 80.0f))
