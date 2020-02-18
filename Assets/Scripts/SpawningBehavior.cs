@@ -11,7 +11,7 @@ public class SpawningBehavior : MonoBehaviour
     void Start()
     {
         playerPosition = GameObject.Find("Player").transform.position;
-        InvokeRepeating("CreateResource", 0.0f, 10.0f);
+        //InvokeRepeating("CreateResource", 0.0f, 10.0f);
 
         rotateX = Random.Range(-1.0f, 1.0f) * 60 * Time.deltaTime;
         rotateY = Random.Range(-1.0f, 1.0f) * 60 * Time.deltaTime;
@@ -44,8 +44,6 @@ public class SpawningBehavior : MonoBehaviour
     private void GeneratedItemBehavior()
     {
         generatedItem.name = generateItemID.title;
-
-
 
         generatedItem.transform.Rotate(rotateX, rotateY, rotateZ);
     }

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public enum MovementType { position, velocity, clinging };
@@ -10,7 +8,9 @@ public class PlayerControls : MonoBehaviour
     // Show fields in the unity inspector for tweaking and debugging
     [SerializeField] float mouseSensitivity = 2f;
     [SerializeField] float movementSpeed = 1f;
+    [SerializeField] float jumpStrength = 0.0f;
     [SerializeField] Vector3 bodyVelocity = Vector3.zero;
+    [SerializeField] float cameraFOV;
 
     public MovementType WASDType;
     public bool objectIsClingable, movingToCling, playerIsClinging, flashlightIsOn;
@@ -29,6 +29,7 @@ public class PlayerControls : MonoBehaviour
         // Declare game objects to be referenced below
         player = GetComponent<Rigidbody>();
         flashlight = GetComponentInChildren<Light>();
+        cameraFOV = 80.0f;
 
         // Player starts with the velocity movement type
         WASDType = MovementType.velocity;
@@ -40,10 +41,14 @@ public class PlayerControls : MonoBehaviour
         MouseControls();
 
         // Process WASD Controls
-        WASDControls();
+        MovementControls();
 
         // Process other key commands
         OtherKeyControls();
+
+        // TODO: Make conditional
+        AdjustCamerFOV();
+
     }
 
     //==========================================/
@@ -55,9 +60,7 @@ public class PlayerControls : MonoBehaviour
     {
         // Convert mouse movement into mouselook
         Mouselook();
-
-        // What happens when the right mouse button is clicked
-        LeftShift();
+        MouseZero();
     }
 
     // Convert mouse movement in two dimensions into mouselook
@@ -87,7 +90,7 @@ public class PlayerControls : MonoBehaviour
     }
 
     // Turn mouse movement into a Vector2, then decide which Movement Type to process
-    private void WASDControls()
+    private void MovementControls()
     {
         // Pressing a WASD key applies a vector in that direction on a 2d plane
         WASD = new Vector3
@@ -113,10 +116,11 @@ public class PlayerControls : MonoBehaviour
     // Call other keypress functions
     private void OtherKeyControls()
     {
-        LeftShift();
-        QERoll();
+        Cling();
+        Roll();
         Flashlight();
         PauseGame();
+        Jump();
     }
 
     //=========================================/
@@ -153,7 +157,7 @@ public class PlayerControls : MonoBehaviour
     }
 
     // Press Q and E to roll left and right
-    private void QERoll()
+    private void Roll()
     {
         if (Input.GetKey(KeyCode.Q))
         {
@@ -169,50 +173,30 @@ public class PlayerControls : MonoBehaviour
     // Cling functions
     //==========================================/
 
-    // Process pressing left shift (Cling)
-    private void LeftShift()
-    {
-        // Press right mouse button to initialize cling functions
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            Cling();
-        }
-
-        // If right mouse is released, revert back to state before right mouse was clicked.
-        else
-        {
-            objectIsClingable = false;
-            movingToCling = false;
-            playerIsClinging = false;
-            WASDType = MovementType.velocity;
-        }
-    }
-
-    // Parent function for a bunch of functions below that deal with clinging controls
+    // Parent cling function
     private void Cling()
     {
-        // See if object is close enough and capable of being clinged to
+        // Reset the movement direction variable each update, so that movement keys move the player player the right directions and distance
         movementDirection = transform.position;
+
+        // Cast a sphere around the player that looks for objects with a clingable collider
         FindClingable();
 
-        if (objectIsClingable == true && playerIsClinging == false)
-        {
-            PullToObject();
-        }
+        // Toggle clinging if key is pressed and surface is clingable
+        ClingKey();
+
+        // If player is close to surface and key is pressed, snap to surface
+        PullToSurface();
     }
 
-    // Check if a clingable surface is close enough and store data about it for future functions
     private void FindClingable()
     {
-        // Cast a sphere out from 'movementDirection' that finds 'Clingable' objects
-        Collider[] clingables = Physics.OverlapSphere(movementDirection, 2.0f, 1<<8);
-        
-        // If there is at least one clingable in range, store the closest one as 'nearestClingable' variable
-        float nearestDistance = float.MaxValue;
-        float distance;
-        GameObject nearestClingable;
-        
-        // If the overlapshere hits an eligible collider, find the closest one and store some variables related to it
+        float distance, nearestDistance = float.MaxValue;
+
+        // Draw a sphere outside of the player to check for clingable surfaces
+        Collider[] clingables = Physics.OverlapSphere(movementDirection, 2.0f, 1 << 8);
+
+        // If overlap sphere finds an eligible clingable
         if (clingables.Length > 0)
         {
             foreach (Collider surface in clingables)
@@ -222,36 +206,65 @@ public class PlayerControls : MonoBehaviour
                 {
                     nearestDistance = distance;
                     firstPoint = surface.ClosestPoint(transform.position);
-                    nearestClingable = surface.gameObject;
                 }
             }
-        
+
             objectIsClingable = true;
         }
         else
         {
-            StopVelocity();
+            objectIsClingable = false;
         }
     }
 
-    // Move the player toward the clingable surface from FindClingable
-    private void PullToObject()
+    // Toggle cling with left shift
+    private void ClingKey()
     {
-        transform.position = Vector3.MoveTowards(transform.position, firstPoint, 5.0f * Time.deltaTime);
-        movingToCling = true;
+        // TODO: Some visual cue that the player is near a clingable object? Would be nice for clinging when facing the other way.
+
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            // If left shift is pressed and FindClingable found an eligible surface, start moving to cling
+            if (objectIsClingable && !movingToCling && !playerIsClinging)
+            {
+                movingToCling = true;
+            }
+            // If left shift is pressed and the player is already clinging or moving to cling, cancel all that
+            else if (movingToCling || playerIsClinging)
+            {
+                ResetCling();
+            }
+        }
     }
 
-    private void OnCollisionStay(UnityEngine.Collision collision)
+    // Change cling variables to false, movement type to velocity
+    private void ResetCling()
     {
-        // If the player collides with an object with the right kind of collider while they're 'moving to cling'
-        if (collision.gameObject.tag == "Clingable" && movingToCling)
+        objectIsClingable = false;
+        movingToCling = false;
+        playerIsClinging = false;
+        WASDType = MovementType.velocity;
+    }
+
+    // Pull player toward clingable surface
+    private void PullToSurface()
+    {
+        if (objectIsClingable && movingToCling)
         {
-            // Cling to that object
-            playerIsClinging = true;
+            transform.position = Vector3.MoveTowards(transform.position, firstPoint, 5.0f * Time.deltaTime);
+        }
+    }
+
+    // If the player is moving to cling when they collide with a clingable surface, change movement type and stop velocity
+    private void OnCollisionStay(Collision collision)
+    {
+        if (collision.gameObject.tag == "Clingable" && (movingToCling))
+        {
+            objectIsClingable = false;
             movingToCling = false;
+            playerIsClinging = true;
             WASDType = MovementType.clinging;
 
-            // Zero velocity
             StopVelocity();
         }
     }
@@ -260,8 +273,6 @@ public class PlayerControls : MonoBehaviour
     {
         FindClosestNormal();
 
-        // If WASD buttons are pressed, flatten the player's movement vector onto the plane defined by the clingable's surface normal
-            //then add the new movement vector to the movementDirection variable
         if (Input.GetAxisRaw("Horizontal") > 0)
         {
             Vector3 rightProjection = Vector3.ProjectOnPlane(transform.right, bodyHit.normal).normalized;
@@ -272,7 +283,7 @@ public class PlayerControls : MonoBehaviour
             Vector3 leftProjection = Vector3.ProjectOnPlane(-transform.right, bodyHit.normal).normalized;
             movementDirection += leftProjection;
         }
-        
+
         if (Input.GetAxisRaw("Vertical") > 0)
         {
             Vector3 forwardProjection = Vector3.ProjectOnPlane(transform.forward, bodyHit.normal).normalized;
@@ -284,13 +295,9 @@ public class PlayerControls : MonoBehaviour
             movementDirection += backwardProjection;
         }
 
-        // Take the movementDirection variable and find the closest point on the clingable surface
-        // Move that new point away from the surface a bit to avoid clipping through it
-        // This is used to move the player across curved as well as flat surfaces
         nextPoint = bodyHit.collider.ClosestPoint(movementDirection) + closestNormal;
     }
 
-    // Store the surface normal of the clingable
     private void FindClosestNormal()
     {
         nextPoint = firstPoint;
@@ -307,11 +314,54 @@ public class PlayerControls : MonoBehaviour
     // Other key-press functions
     //=========================================/
 
+    private void Jump()
+    {
+        JumpCharge();
+
+        // Jump direction is where the player is looking, and speed is determined by JumpCharge function
+        Vector3 jumpVector = transform.forward * jumpStrength;
+
+        // If space is released, jump with charged up force
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
+            ResetCling();
+
+            player.AddForce(jumpVector, ForceMode.Impulse);
+
+            // Reset jumpStrength to zero after finished jumping
+            jumpStrength = 0.0f;
+        }
+    }
+
+    private void JumpCharge()
+    {
+        // TODO: Jump strength tweaking
+        jumpStrength = Mathf.Clamp(jumpStrength, 0.0f, 4.0f);
+        float smoothVelocity = 0.0f;
+
+        // Charge up jump by holding space
+        if (Input.GetKey(KeyCode.Space))
+        {
+            jumpStrength += (6.0f * Time.deltaTime);
+            cameraFOV = Mathf.Lerp(80.0f, 88.0f, jumpStrength / 2.0f);
+        }
+        // If space is released, snap cameraFOV back to default
+        else if (!Input.GetKey(KeyCode.Space) && (cameraFOV > 80.0f))
+        {
+            cameraFOV = Mathf.SmoothDamp(cameraFOV, 80.0f, ref smoothVelocity, 8.0f * Time.deltaTime);
+        }
+    }
+
+    private void AdjustCamerFOV()
+    {
+        Camera.main.fieldOfView = cameraFOV;
+    }
+
     private void StopVelocity()
     {
         player.velocity = Vector3.zero;
     }
-
+    
     // Toggle flashlight with F key
     private void Flashlight()
     {
