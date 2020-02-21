@@ -13,7 +13,7 @@ public class PlayerControls : MonoBehaviour
     [SerializeField] float cameraFOV;
 
     public MovementType WASDType;
-    public bool objectIsClingable, movingToCling, playerIsClinging, flashlightIsOn;
+    public bool objectIsClingable, movingToCling, playerIsClinging, playerIsJumping, flashlightIsOn;
 
     //private Vector2 mouseMovementSum;
     private Vector3 WASD, firstPoint, nextPoint, movementDirection, closestNormal;
@@ -30,7 +30,7 @@ public class PlayerControls : MonoBehaviour
         // Declare game objects to be referenced below
         player = GetComponent<Rigidbody>();
         flashlight = GetComponentInChildren<Light>();
-        cameraFOV = 80.0f;
+        cameraFOV = 60.0f;
 
         // Player starts with the velocity movement type
         WASDType = MovementType.velocity;
@@ -85,7 +85,7 @@ public class PlayerControls : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
-            GetComponent<PlayerCamera>().GrabObject();
+            GetComponentInChildren<PlayerCamera>().GrabObject();
         }
     }
 
@@ -118,9 +118,9 @@ public class PlayerControls : MonoBehaviour
     {
         Cling();
         Roll();
+        Jump();
         Flashlight();
         PauseGame();
-        Jump();
     }
 
     //=========================================/
@@ -223,18 +223,22 @@ public class PlayerControls : MonoBehaviour
     {
         // TODO: Some visual cue that the player is near a clingable object? Would be nice for clinging when facing the other way.
 
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        if (Input.GetKeyDown(KeyCode.Space) && (objectIsClingable) && (!playerIsClinging))
         {
             // If left shift is pressed and FindClingable found an eligible surface, start moving to cling
-            if (objectIsClingable && !movingToCling && !playerIsClinging)
+            if (!movingToCling)
             {
                 movingToCling = true;
             }
             // If left shift is pressed and the player is already clinging or moving to cling, cancel all that
-            else if (movingToCling || playerIsClinging)
+            else if (movingToCling)
             {
                 ResetCling();
             }
+        }
+        else if ((Input.GetKeyDown(KeyCode.Space) && (!objectIsClingable)))
+        {
+            StopVelocity();
         }
     }
 
@@ -317,46 +321,59 @@ public class PlayerControls : MonoBehaviour
 
     private void Jump()
     {
+        if (playerIsClinging && (Input.GetKeyDown(KeyCode.Space)))
+        {
+            playerIsJumping = true;
+        }
+
         JumpCharge();
 
-        // Jump direction is where the player is looking, and speed is determined by JumpCharge function
-        Vector3 jumpVector = transform.forward * jumpStrength;
-
-        // If space is released while looking away from surface, jump with charged up force
-        if (Input.GetKeyUp(KeyCode.Space) && (!PlayerCamera.lookingAtSame))
+        if (playerIsJumping)
         {
-            ResetCling();
 
-            player.AddForce(jumpVector, ForceMode.Impulse);
+            // Jump direction is where the player is looking, and speed is determined by JumpCharge function
+            Vector3 jumpVector = transform.forward * jumpStrength;
 
-            // Reset jumpStrength to zero after finished jumping
-            jumpStrength = 0.0f;
-        }
-        // If space is released while looking at surface, cancel jump and reset jumpStrength to 0;
-        else if (Input.GetKeyUp(KeyCode.Space) && (PlayerCamera.lookingAtSame))
-        {
-            // Reset jumpStrength to zero after finished jumping
-            jumpStrength = 0.0f;
+            // If space is released while looking away from surface, jump with charged up force
+            if (Input.GetKeyUp(KeyCode.Space) && (!PlayerCamera.lookingAtSame))
+            {
+                ResetCling();
+
+                player.AddForce(jumpVector, ForceMode.Impulse);
+
+                // Reset jumpStrength to zero after finished jumping
+                jumpStrength = 0.0f;
+                playerIsJumping = false;
+            }
+            // If space is released while looking at surface, cancel jump and reset jumpStrength to 0;
+            else if (Input.GetKeyUp(KeyCode.Space) && (PlayerCamera.lookingAtSame))
+            {
+                // Reset jumpStrength to zero after finished jumping
+                jumpStrength = 0.0f;
+                playerIsJumping = false;
+            }
         }
     }
 
     private void JumpCharge()
     {
-        // TODO: Jump strength tweaking
-        jumpStrength = Mathf.Clamp(jumpStrength, 0.0f, 4.0f);
-        float smoothVelocity = 0.0f;
-
-        // Charge up jump by holding space
-        if (Input.GetKey(KeyCode.Space) && (playerIsClinging) && (!PlayerCamera.lookingAtSame))
+        // TODO: Delay between pressing space and charging, so players can let go of surface by tapping without pushing away from the surface.
+        if ((playerIsClinging) && (Input.GetKey(KeyCode.Space)) && (!PlayerCamera.lookingAtSame))
         {
+            // TODO: Jump strength tweaking
+            jumpStrength = Mathf.Clamp(jumpStrength, 0.0f, 4.0f);
+
+            // Charge up jump by holding space
             jumpStrength += (6.0f * Time.deltaTime);
-            cameraFOV = Mathf.Lerp(80.0f, 86.0f, jumpStrength / 2.0f);
+            cameraFOV = Mathf.Lerp(60.0f, 66.0f, jumpStrength / 2.0f);
         }
         // If space is released, snap cameraFOV back to default
-        else if (!Input.GetKey(KeyCode.Space) && (cameraFOV > 80.0f))
+        else if (((!playerIsClinging) && (cameraFOV > 60.0f)) || ((playerIsClinging) && (PlayerCamera.lookingAtSame)))
         {
-            cameraFOV = Mathf.SmoothDamp(cameraFOV, 80.0f, ref smoothVelocity, 8.0f * Time.deltaTime);
+            float smoothVelocity = 0.0f;
+            cameraFOV = Mathf.SmoothDamp(cameraFOV, 60.0f, ref smoothVelocity, 8.0f * Time.deltaTime);
         }
+
     }
 
     private void AdjustCamerFOV()

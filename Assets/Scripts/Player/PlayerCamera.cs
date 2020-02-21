@@ -56,6 +56,7 @@ public class PlayerCamera : MonoBehaviour
 
     public void GrabObject()
     {
+        print("test");
         if (isResource == true && lookHit.distance <= 2.0f)
         {
             Destroy(lookHitObject);
