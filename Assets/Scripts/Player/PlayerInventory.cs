@@ -9,14 +9,30 @@ public class PlayerInventory : MonoBehaviour
 {
     public static List<Consumable> characterConsumables = new List<Consumable>();
     public ConsumableDatabase consumableDatabase;
-    private string temp;
+    private string inventory;
+    private float oxygenMeter = 60.0f;
+    Stack<Consumable> newStack = new Stack<Consumable> { };
+
+    private void Start()
+    {
+        transform.GetChild(1).position = new Vector2((Screen.width / 2), (Screen.height / 2));
+    }
 
     private void Update()
     {
         ShowInventory();
+        OxygenMeter();
 
-        transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = temp;
+        // Text of Child 0 (Show Inventory) = temp string
+        transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = inventory;
+
+        // Text of Child 2 (Oxygen) = oxygen meter variable
+        transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = Mathf.Round(oxygenMeter).ToString();
     }
+
+    //=========================================/
+    // Inventory functions
+    //=========================================/
 
     public void GiveItem(int id)
     {
@@ -30,6 +46,12 @@ public class PlayerInventory : MonoBehaviour
         characterConsumables.Add(consumableToAdd);
     }
 
+    public void CreateStack(string consumableName)
+    {
+        Consumable consumableToAdd = consumableDatabase.GetConsumable(consumableName);
+        newStack.Push(consumableToAdd);
+    }
+
     public Consumable CheckForConsumable(int id)
     {
         return characterConsumables.Find(consumable => consumable.id == id);
@@ -37,10 +59,25 @@ public class PlayerInventory : MonoBehaviour
 
     public void ShowInventory()
     {
-        temp = "";
+        inventory = "";
         foreach (Consumable consumable in characterConsumables)
         {
-            temp += consumable.title + '\n';
+            inventory += consumable.title + '\n';
         }
     }
+
+    //=========================================/
+    // Resource meter functions
+    //=========================================/
+
+    private void OxygenMeter()
+    {
+        oxygenMeter -= Time.deltaTime;
+    }
+
+    //=========================================/
+    // Inventory v2
+    //=========================================/
+
+
 }

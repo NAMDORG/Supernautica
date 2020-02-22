@@ -17,12 +17,4 @@ public class Consumable
         this.description = description;
         this.icon = Resources.Load<Sprite>("Sprites/Consumable Icons/" + title);
     }
-
-    public Consumable(Consumable consumable)
-    {
-        this.id = consumable.id;
-        this.title = consumable.title;
-        this.description = consumable.description;
-        this.icon = Resources.Load<Sprite>("Sprites/Consumable Icons/" + consumable.title);
-    }
 }

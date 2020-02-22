@@ -13,14 +13,14 @@ public class PlayerControls : MonoBehaviour
     [SerializeField] float cameraFOV;
 
     public MovementType WASDType;
-    public bool objectIsClingable, movingToCling, playerIsClinging, playerIsJumping, flashlightIsOn;
+    public bool objectIsClingable, movingToCling, playerIsClinging, flashlightIsOn;
 
-    //private Vector2 mouseMovementSum;
+    private bool playerIsJumping, isResource, lookingAtSame;
     private Vector3 WASD, firstPoint, nextPoint, movementDirection, closestNormal;
     private Rigidbody player;
     private Light flashlight;
-    private RaycastHit bodyHit;
-    public static GameObject nearestClingable;
+    private RaycastHit lookHit, bodyHit;
+    public static GameObject nearestClingable, lookHitObject, inventoryUI;
 
     private void Start()
     {
@@ -31,6 +31,7 @@ public class PlayerControls : MonoBehaviour
         player = GetComponent<Rigidbody>();
         flashlight = GetComponentInChildren<Light>();
         cameraFOV = 60.0f;
+        inventoryUI = GameObject.Find("HUD");
 
         // Player starts with the velocity movement type
         WASDType = MovementType.velocity;
@@ -49,6 +50,7 @@ public class PlayerControls : MonoBehaviour
 
         // TODO: Make conditional?
         AdjustCamerFOV();
+        LookingAtClinged();
     }
 
     //==========================================/
@@ -63,29 +65,12 @@ public class PlayerControls : MonoBehaviour
         MouseZero();
     }
 
-    // Convert mouse movement in two dimensions into mouselook
-    private void Mouselook()
-    {
-        Vector2 mouseMovementSum;
-
-        // How much as the mouse moved in X and Y
-        Vector2 mouseXY = new Vector2
-            (Input.GetAxisRaw("Mouse X"),
-                Input.GetAxisRaw("Mouse Y"));
-
-        // Add new mouse movement to the variable holding camera movement (with mouse sensitivity multiplier)
-        mouseMovementSum = mouseXY * mouseSensitivity;
-
-        // Move object with the mouse - camera is a child of this object so it moves as well
-        transform.Rotate(-mouseMovementSum.y, mouseMovementSum.x, 0f, Space.Self);
-    }
-
     // Process clicking the left mouse button (Grab object)
     private void MouseZero()
     {
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
-            GetComponentInChildren<PlayerCamera>().GrabObject();
+            GrabObject();
         }
     }
 
@@ -166,6 +151,75 @@ public class PlayerControls : MonoBehaviour
         else if (Input.GetKey(KeyCode.E))
         {
             transform.Rotate(0f, 0f, -1.0f);
+        }
+    }
+
+    //==========================================/
+    // Mouselook functions
+    //==========================================/
+
+    // Convert mouse movement in two dimensions into mouselook
+    private void Mouselook()
+    {
+        Vector2 mouseMovementSum;
+
+        // How much as the mouse moved in X and Y
+        Vector2 mouseXY = new Vector2
+            (Input.GetAxisRaw("Mouse X"),
+                Input.GetAxisRaw("Mouse Y"));
+
+        // Add new mouse movement to the variable holding camera movement (with mouse sensitivity multiplier)
+        mouseMovementSum = mouseXY * mouseSensitivity;
+
+        // Move object with the mouse - camera is a child of this object so it moves as well
+        transform.Rotate(-mouseMovementSum.y, mouseMovementSum.x, 0f, Space.Self);
+
+
+        LookForObject();
+    }
+
+    private void LookForObject()
+    {
+        if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.TransformDirection(Vector3.forward), out lookHit, Mathf.Infinity))
+        {
+            lookHitObject = lookHit.collider.gameObject;
+            IsLookHitObjectAResource();
+        }
+    }
+
+    private void IsLookHitObjectAResource()
+    {
+        if (lookHitObject.GetComponent<Collider>().tag == "Resource")
+        {
+            isResource = true;
+        }
+        else
+        {
+            isResource = false;
+        }
+    }
+
+    public void GrabObject()
+    {
+        if (isResource == true && lookHit.distance <= 2.0f)
+        {
+            Destroy(lookHitObject);
+            //inventoryUI.GetComponent<PlayerInventory>().GiveItem(lookHitObject.name);
+            inventoryUI.GetComponent<PlayerInventory>().CreateStack(lookHitObject.name);
+        }
+
+        // TODO: Pull object towards camera (maybe not necessary until I have models to work with)
+    }
+
+    private void LookingAtClinged()
+    {
+        if (lookHitObject == PlayerControls.nearestClingable)
+        {
+            lookingAtSame = true;
+        }
+        else
+        {
+            lookingAtSame = false;
         }
     }
 
@@ -316,7 +370,7 @@ public class PlayerControls : MonoBehaviour
     }
 
     //=========================================/
-    // Other key-press functions
+    // Jump functions
     //=========================================/
 
     private void Jump()
@@ -335,7 +389,7 @@ public class PlayerControls : MonoBehaviour
             Vector3 jumpVector = transform.forward * jumpStrength;
 
             // If space is released while looking away from surface, jump with charged up force
-            if (Input.GetKeyUp(KeyCode.Space) && (!PlayerCamera.lookingAtSame))
+            if (Input.GetKeyUp(KeyCode.Space) && (!lookingAtSame))
             {
                 ResetCling();
 
@@ -346,7 +400,7 @@ public class PlayerControls : MonoBehaviour
                 playerIsJumping = false;
             }
             // If space is released while looking at surface, cancel jump and reset jumpStrength to 0;
-            else if (Input.GetKeyUp(KeyCode.Space) && (PlayerCamera.lookingAtSame))
+            else if (Input.GetKeyUp(KeyCode.Space) && (lookingAtSame))
             {
                 // Reset jumpStrength to zero after finished jumping
                 jumpStrength = 0.0f;
@@ -358,7 +412,9 @@ public class PlayerControls : MonoBehaviour
     private void JumpCharge()
     {
         // TODO: Delay between pressing space and charging, so players can let go of surface by tapping without pushing away from the surface.
-        if ((playerIsClinging) && (Input.GetKey(KeyCode.Space)) && (!PlayerCamera.lookingAtSame))
+        // TODO: Make player jump backwards if they're looking toward clinged surface.
+
+        if ((playerIsClinging) && (Input.GetKey(KeyCode.Space)) && (!lookingAtSame))
         {
             // TODO: Jump strength tweaking
             jumpStrength = Mathf.Clamp(jumpStrength, 0.0f, 4.0f);
@@ -368,7 +424,7 @@ public class PlayerControls : MonoBehaviour
             cameraFOV = Mathf.Lerp(60.0f, 66.0f, jumpStrength / 2.0f);
         }
         // If space is released, snap cameraFOV back to default
-        else if (((!playerIsClinging) && (cameraFOV > 60.0f)) || ((playerIsClinging) && (PlayerCamera.lookingAtSame)))
+        else if (((!playerIsClinging) && (cameraFOV > 60.0f)) || ((playerIsClinging) && (lookingAtSame)))
         {
             float smoothVelocity = 0.0f;
             cameraFOV = Mathf.SmoothDamp(cameraFOV, 60.0f, ref smoothVelocity, 8.0f * Time.deltaTime);
@@ -380,6 +436,10 @@ public class PlayerControls : MonoBehaviour
     {
         Camera.main.fieldOfView = cameraFOV;
     }
+
+    //=========================================/
+    // Other key-press functions
+    //=========================================/
 
     private void StopVelocity()
     {
