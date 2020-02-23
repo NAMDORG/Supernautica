@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 public class PlayerInventory : MonoBehaviour
 {
-    public static List<Consumable> characterConsumables = new List<Consumable>();
-    public ConsumableDatabase consumableDatabase;
+    public static List<Item> characterItems = new List<Item>();
+    public ItemDatabase itemDatabase;
     private string inventory;
     private float oxygenMeter = 60.0f;
-    Stack<Consumable> newStack = new Stack<Consumable> { };
 
     private void Start()
     {
@@ -24,7 +20,7 @@ public class PlayerInventory : MonoBehaviour
         OxygenMeter();
 
         // Text of Child 0 (Show Inventory) = temp string
-        transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = inventory;
+        //transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = inventory;
 
         // Text of Child 2 (Oxygen) = oxygen meter variable
         transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = Mathf.Round(oxygenMeter).ToString();
@@ -36,33 +32,27 @@ public class PlayerInventory : MonoBehaviour
 
     public void GiveItem(int id)
     {
-        Consumable consumableToAdd = consumableDatabase.GetConsumable(id);
-        characterConsumables.Add(consumableToAdd);
+        Item itemToAdd = itemDatabase.GetItem(id);
+        characterItems.Add(itemToAdd);
     }
-
-    public void GiveItem(string consumableName)
+    
+    public void GiveItem(string itemName)
     {
-        Consumable consumableToAdd = consumableDatabase.GetConsumable(consumableName);
-        characterConsumables.Add(consumableToAdd);
+        Item itemToAdd = itemDatabase.GetItem(itemName);
+        characterItems.Add(itemToAdd);
     }
-
-    public void CreateStack(string consumableName)
+    
+    public Item CheckForItem(int id)
     {
-        Consumable consumableToAdd = consumableDatabase.GetConsumable(consumableName);
-        newStack.Push(consumableToAdd);
-    }
-
-    public Consumable CheckForConsumable(int id)
-    {
-        return characterConsumables.Find(consumable => consumable.id == id);
+        return characterItems.Find(Item => Item.id == id);
     }
 
     public void ShowInventory()
     {
         inventory = "";
-        foreach (Consumable consumable in characterConsumables)
+        foreach (Item item in characterItems)
         {
-            inventory += consumable.title + '\n';
+            inventory += item.title + '\n';
         }
     }
 
@@ -74,10 +64,5 @@ public class PlayerInventory : MonoBehaviour
     {
         oxygenMeter -= Time.deltaTime;
     }
-
-    //=========================================/
-    // Inventory v2
-    //=========================================/
-
 
 }

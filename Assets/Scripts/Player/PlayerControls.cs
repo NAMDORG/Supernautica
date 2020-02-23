@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-public enum MovementType { position, velocity, clinging };
+public enum MovementType { position, velocity, clinging, disabled };
 
 public class PlayerControls : MonoBehaviour
 {
@@ -204,13 +204,14 @@ public class PlayerControls : MonoBehaviour
         if (isResource == true && lookHit.distance <= 2.0f)
         {
             Destroy(lookHitObject);
-            //inventoryUI.GetComponent<PlayerInventory>().GiveItem(lookHitObject.name);
-            inventoryUI.GetComponent<PlayerInventory>().CreateStack(lookHitObject.name);
+            inventoryUI.GetComponent<PlayerInventory>().GiveItem(lookHitObject.name);
+            transform.GetChild(0).GetChild(1).GetChild(1).GetComponent<ArmInventory>().GiveItem(lookHitObject.name);
         }
 
         // TODO: Pull object towards camera (maybe not necessary until I have models to work with)
     }
 
+    // Check if the player is looking toward the object they're clinging to, so jumping can be processed correctly
     private void LookingAtClinged()
     {
         if (lookHitObject == PlayerControls.nearestClingable)

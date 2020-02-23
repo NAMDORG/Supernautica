@@ -3,7 +3,7 @@
 public class SpawningBehavior : MonoBehaviour
 {
     Vector3 playerPosition;
-    Consumable generateItemID;
+    Item generateItemID;
     GameObject generatedItem;
 
     float rotateX, rotateY, rotateZ;
@@ -30,8 +30,8 @@ public class SpawningBehavior : MonoBehaviour
     
     private void CreateResource()
     {
-        generateItemID = ConsumableDatabase.consumables[Random.Range(0, 2)];
-        string generateItemPath = "Prefabs/Consumables/" + generateItemID.title;
+        generateItemID = ItemDatabase.items[Random.Range(0, 2)];
+        string generateItemPath = "Prefabs/Items/" + generateItemID.title;
         GameObject objectToGenerate = Resources.Load(generateItemPath) as GameObject;
 
         Vector3 generateLocation = (GameObject.Find("Player").transform.position + (Random.insideUnitSphere * 10.0f));
